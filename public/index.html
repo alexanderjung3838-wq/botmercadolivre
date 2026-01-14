@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Bot - Mercado Livre</title>
+    <style>
+        :root { --primary: #007bff; --bg: #f4f6f9; --card: #ffffff; --text: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { text-align: center; color: #2c3e50; }
+        
+        /* O Cartão do Formulário */
+        .card { background: var(--card); padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 100px; resize: vertical; }
+        
+        button.btn-save { background-color: #28a745; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; }
+        button.btn-save:hover { background-color: #218838; }
+
+        /* A Tabela de Produtos */
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #007bff; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        .actions button { padding: 5px 10px; margin-right: 5px; cursor: pointer; border: none; border-radius: 3px; }
+        .btn-edit { background-color: #ffc107; color: #333; }
+        .btn-delete { background-color: #dc3545; color: white; }
+
+        .note { font-size: 12px; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🤖 Central de Comando do Bot</h1>
+
+    <div class="card">
+        <h2>Cadastrar / Editar Produto</h2>
+        <div class="form-group">
+            <label>Nome do Produto (Para você identificar)</label>
+            <input type="text" id="nome" placeholder="Ex: Iris Diagnose Pro">
+        </div>
+
+        <div class="form-group">
+            <label>ID do Anúncio no Mercado Livre (IMPORTANTE ⚠️)</label>
+            <input type="text" id="id_anuncio" placeholder="Ex: MLB123456789">
+            <div class="note">Copie o código 'MLB...' que fica no link do seu anúncio ou na lista de vendas.</div>
+        </div>
+
+        <div class="form-group">
+            <label>Mensagem de Entrega</label>
+            <textarea id="mensagem" placeholder="Olá! Obrigado pela compra. Aqui está seu link de acesso: ..."></textarea>
+            <div class="note">Essa é a mensagem exata que o cliente vai receber no chat.</div>
+        </div>
+
+        <button class="btn-save" onclick="salvarProduto()">💾 Salvar Configuração</button>
+    </div>
+
+    <div class="card">
+        <h2>📦 Produtos Configurados</h2>
+        <table id="tabela-produtos">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>ID Anúncio (MLB)</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 1. CARREGAR PRODUTOS ASSIM QUE ABRIR A TELA
+    document.addEventListener('DOMContentLoaded', carregarProdutos);
+
+    async function carregarProdutos() {
+        const resposta = await fetch('/api/produtos');
+        const produtos = await resposta.json();
+        
+        const tbody = document.querySelector('#tabela-produtos tbody');
+        tbody.innerHTML = ''; // Limpa a tabela antes de encher
+
+        produtos.forEach(prod => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${prod.nome}</strong></td>
+                <td>${prod.id_anuncio}</td>
+                <td class="actions">
+                    <button class="btn-edit" onclick='editar("${prod.nome}", "${prod.id_anuncio}", ${JSON.stringify(prod.mensagem)})'>✏️ Editar</button>
+                    <button class="btn-delete" onclick="deletar('${prod._id}')">🗑️ Excluir</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 2. FUNÇÃO PARA SALVAR
+    async function salvarProduto() {
+        const nome = document.getElementById('nome').value;
+        const id_anuncio = document.getElementById('id_anuncio').value;
+        const mensagem = document.getElementById('mensagem').value;
+
+        if(!nome || !id_anuncio || !mensagem) {
+            alert("Por favor, preencha todos os campos!");
+            return;
+        }
+
+        const dados = { nome, id_anuncio, mensagem };
+
+        await fetch('/api/produtos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+
+        alert('Produto salvo com sucesso!');
+        limparFormulario();
+        carregarProdutos(); // Atualiza a lista na hora
+    }
+
+    // 3. FUNÇÃO PARA DELETAR
+    async function deletar(id) {
+        if(confirm("Tem certeza que quer apagar esse produto?")) {
+            await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+            carregarProdutos();
+        }
+    }
+
+    // 4. FUNÇÃO PARA PREENCHER O FORMULÁRIO (EDITAR)
+    function editar(nome, id, msg) {
+        document.getElementById('nome').value = nome;
+        document.getElementById('id_anuncio').value = id;
+        document.getElementById('mensagem').value = msg;
+        // Rola a tela pra cima
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function limparFormulario() {
+        document.getElementById('nome').value = '';
+        document.getElementById('id_anuncio').value = '';
+        document.getElementById('mensagem').value = '';
+    }
+</script>
+
+</body>
+</html>
