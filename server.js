@@ -7,21 +7,35 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurações para entender dados JSON e formulários
+// --- CONFIGURAÇÃO DE SEGURANÇA (SENHA DO PAINEL) ---
+const ADMIN_LOGIN = 'BotPro';      // <--- Mude seu usuário aqui
+const ADMIN_SENHA = 'aj065630';     // <--- Mude sua senha aqui
+
+// Middleware para verificar senha
+const protegerPainel = (req, res, next) => {
+  const auth = { login: ADMIN_LOGIN, password: ADMIN_SENHA };
+  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+  const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+
+  if (login && password && login === auth.login && password === auth.password) {
+    return next();
+  }
+  
+  // Se a senha estiver errada, pede de novo
+  res.set('WWW-Authenticate', 'Basic realm="401"');
+  res.status(401).send('Acesso negado: Você precisa da senha do administrador.');
+};
+
+// Configurações básicas
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configuração para servir o Painel (HTML) que faremos depois
-app.use(express.static(path.join(__dirname, 'public')));
-
-// --- 1. CONEXÃO COM O BANCO DE DADOS ---
+// --- 1. CONEXÃO COM O BANCO ---
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Conectado ao MongoDB'))
   .catch((err) => console.error('❌ Erro no MongoDB:', err));
 
-// --- 2. SCHEMAS (AS GAVETAS DO BANCO) ---
-
-// Gaveta para guardar os Tokens (Auth)
+// --- 2. SCHEMAS ---
 const TokenSchema = new mongoose.Schema({
   access_token: String,
   refresh_token: String,
@@ -30,25 +44,24 @@ const TokenSchema = new mongoose.Schema({
 });
 const Token = mongoose.model('Token', TokenSchema);
 
-// Gaveta para guardar seus PRODUTOS (Painel)
 const ProdutoSchema = new mongoose.Schema({
-  nome: String,           // Ex: Iris Diagnose Pro
-  id_anuncio: String,     // Ex: MLB12345678 (ID do ML)
-  mensagem: String,       // A mensagem de entrega completa
-  link_download: String,  // (Opcional) Apenas para organização
+  nome: String,
+  id_anuncio: String,
+  mensagem: String,
+  link_download: String,
   ativo: { type: Boolean, default: true }
 });
 const Produto = mongoose.model('Produto', ProdutoSchema);
 
-// --- 3. ROTAS DE AUTENTICAÇÃO (LOGIN) ---
+// --- 3. ROTAS PÚBLICAS (O Mercado Livre acessa aqui sem senha) ---
 
-// Rota 1: Iniciar login
+// Login do ML
 app.get('/auth', (req, res) => {
   const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${process.env.ML_APP_ID}&redirect_uri=${process.env.ML_REDIRECT_URI}`;
   res.redirect(authUrl);
 });
 
-// Rota 2: Receber o código e trocar por tokens
+// Callback do ML
 app.get('/callback', async (req, res) => {
   const { code } = req.query;
   try {
@@ -59,149 +72,85 @@ app.get('/callback', async (req, res) => {
       code: code,
       redirect_uri: process.env.ML_REDIRECT_URI,
     });
-
-    // Salva ou atualiza no Banco
     await Token.findOneAndUpdate({}, response.data, { upsert: true, new: true });
-    
-    res.send('<h1>Login realizado com sucesso!</h1><p>Tokens salvos no banco. Pode fechar essa janela.</p>');
-    console.log('✅ Novos tokens gerados e salvos.');
+    res.send('<h1>Login realizado! Pode fechar.</h1>');
   } catch (error) {
-    console.error('Erro no login:', error.response ? error.response.data : error.message);
     res.status(500).send('Erro ao autenticar.');
   }
 });
 
-// --- 4. API DO PAINEL (O CÉREBRO DO SEU DASHBOARD) ---
-
-// Listar todos os produtos
-app.get('/api/produtos', async (req, res) => {
-  try {
-    const produtos = await Produto.find();
-    res.json(produtos);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar produtos' });
-  }
-});
-
-// Criar ou Atualizar produto
-app.post('/api/produtos', async (req, res) => {
-  try {
-    const { nome, id_anuncio, mensagem, link_download } = req.body;
-    
-    // Procura se já existe um produto com esse ID do ML
-    let produto = await Produto.findOne({ id_anuncio });
-
-    if (produto) {
-      // Atualiza
-      produto.nome = nome;
-      produto.mensagem = mensagem;
-      produto.link_download = link_download;
-      await produto.save();
-      console.log(`✏️ Produto atualizado: ${nome}`);
-    } else {
-      // Cria novo
-      produto = await Produto.create({ nome, id_anuncio, mensagem, link_download });
-      console.log(`✨ Novo produto criado: ${nome}`);
-    }
-    res.json({ success: true, produto });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao salvar produto' });
-  }
-});
-
-// Deletar produto
-app.delete('/api/produtos/:id', async (req, res) => {
-  try {
-    await Produto.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao deletar' });
-  }
-});
-
-
-// --- 5. FUNÇÃO PARA PEGAR O TOKEN ATUALIZADO ---
-async function getAccessToken() {
-  const tokenData = await Token.findOne();
-  if (!tokenData) return null;
-  return tokenData.access_token;
-}
-
-// --- 6. ROTA DE NOTIFICAÇÕES (O GATILHO DA VENDA) ---
+// Notificações de Venda (O Gatilho)
 app.post('/notifications', async (req, res) => {
-  res.status(200).send('OK'); // Responde rápido pro ML não reclamar
-  
+  res.status(200).send('OK');
   const { resource, topic, user_id } = req.body;
   
-  // Só nos interessa se for uma venda ("orders_v2" ou "orders")
   if (topic === 'orders_v2' || topic === 'orders') {
-    console.log(`💰 Nova venda detectada! Resource: ${resource}`);
-    
+    console.log(`🔔 Venda detectada: ${resource}`);
     try {
-      const accessToken = await getAccessToken();
-      if (!accessToken) return console.log('❌ Erro: Nenhum token salvo no banco.');
+      // Pega o token
+      const tokenData = await Token.findOne();
+      if (!tokenData) return;
+      const accessToken = tokenData.access_token;
 
-      // 1. Vai no ML perguntar os detalhes dessa venda
-      const vendaResponse = await axios.get(`https://api.mercadolibre.com${resource}`, {
+      // Detalhes da venda
+      const venda = (await axios.get(`https://api.mercadolibre.com${resource}`, {
         headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      const venda = vendaResponse.data;
+      })).data;
 
-      // 2. Descobre quem comprou e o que comprou
       const compradorId = venda.buyer.id;
-      const packId = venda.pack_id || venda.id; // ID do pacote de mensagens
-      
-      // Pega o primeiro item da lista (geralmente é só 1)
+      const packId = venda.pack_id || venda.id;
       const itemVendido = venda.order_items[0].item;
-      const idAnuncio = itemVendido.id; // O famoso MLB...
-      const nomeAnuncio = itemVendido.title;
+      const idAnuncio = itemVendido.id;
 
-      console.log(`📦 Produto: ${nomeAnuncio} | ID: ${idAnuncio}`);
+      // Busca produto no banco
+      const produto = await Produto.findOne({ id_anuncio: idAnuncio });
 
-      // 3. Procura no NOSSO banco se temos esse produto cadastrado
-      const produtoConfigurado = await Produto.findOne({ id_anuncio: idAnuncio });
-
-      if (produtoConfigurado) {
-        // ACHAMOS! Vamos mandar a mensagem
-        console.log(`✅ Encontrado no painel! Enviando mensagem...`);
-        
-        await enviarMensagem(packId, user_id, compradorId, produtoConfigurado.mensagem, accessToken);
-        
-      } else {
-        console.log(`⚠️ Venda do item ${idAnuncio} recebida, mas NÃO cadastrada no painel.`);
+      if (produto) {
+        console.log(`✅ Produto encontrado: ${produto.nome}. Enviando mensagem...`);
+        await axios.post(`https://api.mercadolibre.com/messages/packs/${packId}/sellers/${user_id}?tag=post_sale`, {
+          from: { user_id },
+          to: { user_id: compradorId },
+          text: produto.mensagem
+        }, { headers: { Authorization: `Bearer ${accessToken}` } });
+        console.log(`🚀 Mensagem enviada!`);
       }
-
     } catch (error) {
-      console.error('❌ Erro ao processar venda:', error.message);
+      console.error('Erro processando venda:', error.message);
     }
   }
 });
 
-// --- 7. FUNÇÃO DE ENVIAR MENSAGEM ---
-async function enviarMensagem(packId, meuId, compradorId, texto, token) {
-  try {
-    const url = `https://api.mercadolibre.com/messages/packs/${packId}/sellers/${meuId}?tag=post_sale`;
-    
-    const corpoMensagem = {
-      from: { user_id: meuId },
-      to: { user_id: compradorId },
-      text: texto
-    };
+// --- 4. ROTAS PROTEGIDAS (Só acessa com SENHA) ---
 
-    await axios.post(url, corpoMensagem, {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    console.log(`🚀 MENSAGEM ENVIADA COM SUCESSO!`);
-  } catch (error) {
-    console.error(`❌ Falha ao enviar mensagem:`, error.response ? error.response.data : error.message);
-  }
-}
+// Aplica a proteção daqui para baixo
+app.use(protegerPainel); 
 
-// --- INICIAR SERVIDOR ---
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+// Serve o Painel Visual
+app.use(express.static(path.join(__dirname, 'public')));
+
+// API do Painel (Salvar/Listar)
+app.get('/api/produtos', async (req, res) => {
+  const produtos = await Produto.find();
+  res.json(produtos);
 });
+
+app.post('/api/produtos', async (req, res) => {
+  const { nome, id_anuncio, mensagem } = req.body;
+  let produto = await Produto.findOne({ id_anuncio });
+  if (produto) {
+    produto.nome = nome;
+    produto.mensagem = mensagem;
+    await produto.save();
+  } else {
+    produto = await Produto.create({ nome, id_anuncio, mensagem });
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/produtos/:id', async (req, res) => {
+  await Produto.findByIdAndDelete(req.params.id);
+  res.json({ ok: true });
+});
+
+// Iniciar
+app.listen(PORT, () => console.log(`🚀 Rodando na porta ${PORT}`));
