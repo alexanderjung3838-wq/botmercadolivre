@@ -81,7 +81,8 @@ async function getValidToken() {
 
 // --- ROTAS PÚBLICAS ---
 app.get('/auth', (req, res) => {
-  res.redirect(`https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${process.env.ML_APP_ID}&redirect_uri=${process.env.ML_REDIRECT_URI}`);
+  // Linha atualizada com permissões VIP
+res.redirect(`https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${process.env.ML_APP_ID}&redirect_uri=${process.env.ML_REDIRECT_URI}&scope=offline_access read write`);
 });
 
 app.get('/callback', async (req, res) => {
