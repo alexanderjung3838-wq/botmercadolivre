@@ -34,7 +34,7 @@ const TokenSchema = new mongoose.Schema({
   access_token: String,
   refresh_token: String,
   expires_in: Number,
-  updated_at: { type: Date, default: Date.now } // Hora que pegou o token
+  updated_at: { type: Date, default: Date.now }
 });
 const Token = mongoose.model('Token', TokenSchema);
 
@@ -42,7 +42,13 @@ const Produto = mongoose.model('Produto', new mongoose.Schema({
   nome: String, id_anuncio: String, mensagem: String
 }));
 
-// --- FUNÇÃO MÁGICA: RENOVA O TOKEN SOZINHO ---
+// NOVO: Schema para lembrar das vendas já processadas
+const VendaProcessada = mongoose.model('VendaProcessada', new mongoose.Schema({
+  id_venda: { type: String, unique: true },
+  data_processamento: { type: Date, default: Date.now }
+}));
+
+// --- FUNÇÃO DE RENOVAÇÃO DE TOKEN ---
 async function getValidToken() {
   const tokenData = await Token.findOne();
   if (!tokenData) return null;
@@ -50,12 +56,11 @@ async function getValidToken() {
   const agora = new Date();
   const dataExpiracao = new Date(tokenData.updated_at.getTime() + (tokenData.expires_in * 1000));
   
-  // Se ainda falta tempo para vencer (damos uma margem de 5 min), usa o atual
   if (agora < dataExpiracao - 5 * 60000) {
     return tokenData.access_token;
   }
 
-  console.log('🔄 Token vencido! Renovando automaticamente...');
+  console.log('🔄 Token vencido! Renovando...');
   try {
     const response = await axios.post('https://api.mercadolibre.com/oauth/token', {
       grant_type: 'refresh_token',
@@ -64,25 +69,21 @@ async function getValidToken() {
       refresh_token: tokenData.refresh_token
     });
 
-    // Atualiza no banco
     tokenData.access_token = response.data.access_token;
-    tokenData.refresh_token = response.data.refresh_token; // O ML pode mandar um novo refresh_token
+    tokenData.refresh_token = response.data.refresh_token; 
     tokenData.expires_in = response.data.expires_in;
     tokenData.updated_at = new Date();
     await tokenData.save();
-
-    console.log('✅ Token renovado com sucesso!');
     return tokenData.access_token;
   } catch (error) {
-    console.error('❌ Erro fatal ao renovar token:', error.response?.data || error.message);
+    console.error('❌ Erro ao renovar token:', error.message);
     return null;
   }
 }
 
 // --- ROTAS PÚBLICAS ---
 app.get('/auth', (req, res) => {
-  // Linha atualizada com permissões VIP
-res.redirect(`https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${process.env.ML_APP_ID}&redirect_uri=${process.env.ML_REDIRECT_URI}&scope=offline_access read write`);
+  res.redirect(`https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${process.env.ML_APP_ID}&redirect_uri=${process.env.ML_REDIRECT_URI}`);
 });
 
 app.get('/callback', async (req, res) => {
@@ -91,49 +92,58 @@ app.get('/callback', async (req, res) => {
     const r = await axios.post('https://api.mercadolibre.com/oauth/token', {
       grant_type: 'authorization_code', client_id: process.env.ML_APP_ID, client_secret: process.env.ML_CLIENT_SECRET, code, redirect_uri: process.env.ML_REDIRECT_URI,
     });
-    // Salva ou Atualiza
     await Token.findOneAndUpdate({}, { ...r.data, updated_at: new Date() }, { upsert: true });
-    res.send('<h1>Login realizado! Tokens salvos e prontos para renovação automática.</h1>');
+    res.send('<h1>Login realizado! Tokens salvos.</h1>');
   } catch (e) { res.status(500).send('Erro ao autenticar.'); }
 });
 
 app.post('/notifications', async (req, res) => {
-  res.status(200).send('OK'); // Responde rápido pro ML não ficar bravo
+  res.status(200).send('OK'); // Responde rápido
   const { resource, topic, user_id } = req.body;
   
   if (topic === 'orders_v2' || topic === 'orders') {
-    try {
-      // 1. PEGA O TOKEN (Já verifica se precisa renovar)
-      const accessToken = await getValidToken();
-      if (!accessToken) {
-        console.error('⛔ Sem token válido. Faça login em /auth novamente.');
-        return;
-      }
+    // Extrai apenas o número do ID da venda (ex: /orders/12345 -> 12345)
+    const idVenda = resource.split('/').pop();
 
-      // 2. BUSCA A VENDA
+    // 1. VERIFICAÇÃO DE MEMÓRIA (Anti-Duplicidade)
+    const jaProcessada = await VendaProcessada.findOne({ id_venda: idVenda });
+    if (jaProcessada) {
+      console.log(`✋ Venda ${idVenda} já foi atendida. Ignorando.`);
+      return;
+    }
+
+    try {
+      const accessToken = await getValidToken();
+      if (!accessToken) return;
+
       const venda = (await axios.get(`https://api.mercadolibre.com${resource}`, { headers: { Authorization: `Bearer ${accessToken}` } })).data;
       const itemID = venda.order_items[0].item.id;
       
-      // 3. BUSCA O PRODUTO NO NOSSO BANCO
       const produto = await Produto.findOne({ id_anuncio: itemID });
       
       if (produto) {
-        console.log(`🔔 Venda de: ${produto.nome}. Enviando mensagem...`);
+        console.log(`🔔 Venda nova: ${produto.nome}. Enviando mensagem...`);
+        
         await axios.post(`https://api.mercadolibre.com/messages/packs/${venda.pack_id || venda.id}/sellers/${user_id}?tag=post_sale`, 
           { from: { user_id }, to: { user_id: venda.buyer.id }, text: produto.mensagem }, 
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-        console.log(`✅ Mensagem enviada com sucesso!`);
-      } else {
-        console.log(`⚠️ Venda recebida (${itemID}), mas produto não cadastrado no painel.`);
+
+        // 2. MARCA COMO PROCESSADA NO BANCO
+        await VendaProcessada.create({ id_venda: idVenda });
+        console.log(`✅ Mensagem enviada e venda registrada para não repetir!`);
       }
     } catch (e) { 
-      console.error('❌ Erro processando venda:', e.response?.data || e.message); 
+      // Se der erro de "Mensagem já enviada", a gente marca como processada também pra parar de tentar
+      if (e.response && e.response.status === 400) {
+          await VendaProcessada.create({ id_venda: idVenda });
+      }
+      console.error('❌ Erro processando venda:', e.message); 
     }
   }
 });
 
-// --- ROTAS DO PAINEL (PROTEGIDAS) ---
+// --- ROTAS DO PAINEL ---
 app.use(protegerPainel);
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/produtos', async (req, res) => res.json(await Produto.find()));
