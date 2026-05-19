@@ -12,49 +12,52 @@ app.use(express.urlencoded({ extended: true }));
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'chave_mestra_secreta_mercadobot';
 
-// --- 1. CONEXÃO MONGODB ---
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('✅ Banco SaaS Conectado'))
     .catch(err => console.error('❌ Erro Mongo:', err));
 
-// --- 2. MODELOS DO BANCO (MULTI-CONTAS) ---
+// --- MODELOS ---
 const UsuarioSchema = new mongoose.Schema({
     email: { type: String, unique: true, required: true },
-    senha: { type: String, required: true }
+    senha: { type: String, required: true },
+    status: { type: String, default: 'ativo' } // NOVO: Controle de Inadimplência
 });
 const Usuario = mongoose.model('Usuario', UsuarioSchema);
 
-const ProdutoSchema = new mongoose.Schema({
+const Produto = mongoose.model('Produto', new mongoose.Schema({
     usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
     nome: String, id_anuncio: String, mensagem: String
-});
-const Produto = mongoose.model('Produto', ProdutoSchema);
+}));
 
-const TokenSchema = new mongoose.Schema({
+const Token = mongoose.model('Token', new mongoose.Schema({
     usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
     ml_user_id: { type: String, unique: true },
     access_token: String, refresh_token: String,
     expires_in: Number, updated_at: { type: Date, default: Date.now }
-});
-const Token = mongoose.model('Token', TokenSchema);
+}));
 
 const VendaProcessada = mongoose.model('VendaProcessada', new mongoose.Schema({
     id_venda: { type: String, unique: true }
 }));
 
-// --- 3. MIDDLEWARE DE SEGURANÇA ---
+// --- SEGURANÇA ---
 const autenticar = (req, res, next) => {
     const token = req.headers['authorization'];
-    if (!token) return res.status(401).json({ erro: 'Acesso negado. Faça login.' });
-    
+    if (!token) return res.status(401).json({ erro: 'Acesso negado.' });
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) return res.status(401).json({ erro: 'Sessão expirada.' });
-        req.usuarioId = decoded.id; // Guarda o ID do cliente que está usando o sistema
+        req.usuarioId = decoded.id;
+        req.isAdmin = decoded.isAdmin;
         next();
     });
 };
 
-// --- 4. ROTAS DE LOGIN E CADASTRO (CLIENTES) ---
+const somenteAdmin = (req, res, next) => {
+    if (!req.isAdmin) return res.status(403).json({ erro: 'Acesso restrito ao Dono.' });
+    next();
+};
+
+// --- LOGIN E CADASTRO ---
 app.post('/api/auth/register', async (req, res) => {
     try {
         const hash = await bcrypt.hash(req.body.senha, 10);
@@ -66,48 +69,57 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     const u = await Usuario.findOne({ email: req.body.email });
     if (u && await bcrypt.compare(req.body.senha, u.senha)) {
-        const token = jwt.sign({ id: u._id }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, msg: 'Login efetuado!' });
+        if (u.status !== 'ativo') return res.status(403).json({ erro: 'Conta suspensa. Contate o suporte.' });
+        
+        const isSuperAdmin = u.email === process.env.ADMIN_EMAIL;
+        const token = jwt.sign({ id: u._id, isAdmin: isSuperAdmin }, JWT_SECRET, { expiresIn: '7d' });
+        res.json({ token, isAdmin: isSuperAdmin, msg: 'Login efetuado!' });
     } else { 
         res.status(401).json({ erro: 'Email ou senha inválidos.' }); 
     }
 });
 
-// --- 5. INTEGRAÇÃO MERCADO LIVRE (AUTORIZAÇÃO) ---
+// --- ROTAS DO ADMINISTRADOR (SÓ VOCÊ VÊ) ---
+app.get('/api/admin/usuarios', autenticar, somenteAdmin, async (req, res) => {
+    const usuarios = await Usuario.find({}, '-senha');
+    res.json(usuarios);
+});
 
-// Essa rota gera o link do ML exclusivo para o cliente logado
+app.put('/api/admin/usuarios/:id/status', autenticar, somenteAdmin, async (req, res) => {
+    const u = await Usuario.findById(req.params.id);
+    u.status = u.status === 'ativo' ? 'bloqueado' : 'ativo';
+    await u.save();
+    res.json({ ok: true, status: u.status });
+});
+
+// --- INTEGRAÇÃO MERCADO LIVRE ---
 app.get('/api/ml/auth-url', autenticar, (req, res) => {
-    // O 'state' manda o ID do cliente pro ML devolver pra gente depois
     const url = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${process.env.ML_APP_ID}&redirect_uri=${process.env.ML_REDIRECT_URI}&state=${req.usuarioId}`;
     res.json({ url });
 });
 
-// O Mercado Livre devolve o cliente para cá
 app.get('/callback', async (req, res) => {
-    const { code, state } = req.query; // state = usuarioId do cliente
+    const { code, state } = req.query; 
     if (!state) return res.status(400).send('Erro: Cliente não identificado.');
-
     try {
         const r = await axios.post('https://api.mercadolibre.com/oauth/token', {
             grant_type: 'authorization_code', client_id: process.env.ML_APP_ID, 
             client_secret: process.env.ML_CLIENT_SECRET, code, redirect_uri: process.env.ML_REDIRECT_URI
         });
-        
         await Token.findOneAndUpdate(
             { usuarioId: state }, 
             { ...r.data, usuarioId: state, ml_user_id: r.data.user_id, updated_at: new Date() }, 
             { upsert: true }
         );
-        res.send('<h1>Conta do Mercado Livre conectada com sucesso! Pode fechar esta janela.</h1>');
+        res.send('<h1>Mercado Livre conectado! Pode fechar esta janela.</h1>');
     } catch (e) { res.status(500).send('Erro ao conectar com Mercado Livre.'); }
 });
 
-// --- 6. O CÉREBRO: RECEBENDO VENDAS (MULTI-CONTAS) ---
+// --- RECEBENDO VENDAS (A TRAVA DE SEGURANÇA) ---
 async function getValidToken(tokenData) {
     const agora = new Date();
     const expira = new Date(tokenData.updated_at.getTime() + (tokenData.expires_in * 1000));
     if (agora < expira - 5 * 60000) return tokenData.access_token;
-
     try {
         const r = await axios.post('https://api.mercadolibre.com/oauth/token', {
             grant_type: 'refresh_token', client_id: process.env.ML_APP_ID,
@@ -128,12 +140,18 @@ app.post('/notifications', async (req, res) => {
     
     if (topic === 'orders_v2' || topic === 'orders') {
         const idVenda = resource.split('/').pop();
-        if (await VendaProcessada.findOne({ id_venda: idVenda })) return; // Anti-duplicidade
+        if (await VendaProcessada.findOne({ id_venda: idVenda })) return; 
 
         try {
-            // Acha o dono da venda
             const tokenData = await Token.findOne({ ml_user_id: String(user_id) });
             if (!tokenData) return;
+
+            // TRAVA DE SEGURANÇA: O cliente pagou a conta?
+            const dono = await Usuario.findById(tokenData.usuarioId);
+            if (!dono || dono.status !== 'ativo') {
+                console.log(`🚫 Venda ignorada: Cliente ${dono.email} está BLOQUEADO.`);
+                return;
+            }
 
             const accessToken = await getValidToken(tokenData);
             if (!accessToken) return;
@@ -141,7 +159,6 @@ app.post('/notifications', async (req, res) => {
             const venda = (await axios.get(`https://api.mercadolibre.com${resource}`, { headers: { Authorization: `Bearer ${accessToken}` } })).data;
             const itemID = venda.order_items[0].item.id;
             
-            // Busca o produto focado NO CLIENTE correto
             const produto = await Produto.findOne({ usuarioId: tokenData.usuarioId, id_anuncio: itemID });
             
             if (produto) {
@@ -150,17 +167,15 @@ app.post('/notifications', async (req, res) => {
                     { headers: { Authorization: `Bearer ${accessToken}` } }
                 );
                 await VendaProcessada.create({ id_venda: idVenda });
-                console.log(`✅ Mensagem enviada para a loja do cliente ID: ${tokenData.usuarioId}`);
             }
         } catch (e) { console.error('❌ Erro Notificação:', e.message); }
     }
 });
 
-// --- 7. ROTAS DO PAINEL DE PRODUTOS (PROTEGIDAS) ---
+// --- ROTAS DO PAINEL DO CLIENTE ---
 app.get('/api/produtos', autenticar, async (req, res) => {
-    res.json(await Produto.find({ usuarioId: req.usuarioId })); // Cliente só vê o que é dele
+    res.json(await Produto.find({ usuarioId: req.usuarioId }));
 });
-
 app.post('/api/produtos', autenticar, async (req, res) => {
     const { nome, id_anuncio, mensagem } = req.body;
     let p = await Produto.findOne({ usuarioId: req.usuarioId, id_anuncio });
@@ -168,7 +183,6 @@ app.post('/api/produtos', autenticar, async (req, res) => {
     else { await Produto.create({ usuarioId: req.usuarioId, nome, id_anuncio, mensagem }); }
     res.json({ ok: true });
 });
-
 app.delete('/api/produtos/:id', autenticar, async (req, res) => {
     await Produto.findOneAndDelete({ _id: req.params.id, usuarioId: req.usuarioId });
     res.json({ ok: true });
