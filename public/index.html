@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MercadoBot - Seu Robô de Vendas</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 800px; padding: 20px; }
+        
+        /* Telas */
+        #tela-login, #tela-cadastro, #tela-dashboard { display: none; }
+        .ativo { display: block !important; }
+
+        /* Cartões */
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 50px; text-align: center; }
+        .card-dash { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        
+        h1, h2 { color: #333; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        
+        button { background: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        
+        .btn-ml { background: #ffe600; color: #333; font-weight: bold; }
+        .btn-ml:hover { background: #e6cf00; }
+        .btn-sair { background: #dc3545; width: auto; float: right; padding: 8px 15px; margin-top: 0; }
+        
+        .link { color: #007bff; cursor: pointer; text-decoration: underline; margin-top: 15px; display: inline-block; }
+        
+        /* Lista de Produtos */
+        .item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+        .btn-del { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div id="tela-login" class="card ativo">
+        <h2>🤖 MercadoBot SaaS</h2>
+        <p>Faça login para gerenciar suas automações</p>
+        <input type="email" id="login-email" placeholder="Seu E-mail">
+        <input type="password" id="login-senha" placeholder="Sua Senha">
+        <button onclick="fazerLogin()">Entrar</button>
+        <span class="link" onclick="mostrarTela('tela-cadastro')">Não tem conta? Cadastre-se grátis</span>
+    </div>
+
+    <div id="tela-cadastro" class="card">
+        <h2>Criar Nova Conta</h2>
+        <input type="email" id="cad-email" placeholder="E-mail">
+        <input type="password" id="cad-senha" placeholder="Senha">
+        <button onclick="fazerCadastro()">Criar Conta</button>
+        <span class="link" onclick="mostrarTela('tela-login')">Já tenho conta, quero entrar</span>
+    </div>
+
+    <div id="tela-dashboard">
+        <div style="overflow: hidden; margin-bottom: 20px; margin-top: 20px;">
+            <h2 style="float: left; margin: 0;">Painel de Controle</h2>
+            <button class="btn-sair" onclick="sair()">Sair</button>
+        </div>
+
+        <div class="card-dash">
+            <h3>🔗 Passo 1: Conectar Conta</h3>
+            <p>Para o robô funcionar, autorize ele a ler suas vendas.</p>
+            <button class="btn-ml" onclick="conectarML()">Conectar com Mercado Livre</button>
+        </div>
+
+        <div class="card-dash">
+            <h3>📦 Passo 2: Cadastrar Produto</h3>
+            <input type="text" id="nome" placeholder="Nome do Produto (Ex: Planilha Excel)">
+            <input type="text" id="mlb" placeholder="ID do Anúncio (Ex: MLB12345678)">
+            <textarea id="msg" rows="4" placeholder="Mensagem automática para o cliente..."></textarea>
+            <button onclick="salvarProduto()">Salvar Produto</button>
+        </div>
+
+        <div class="card-dash">
+            <h3>📋 Seus Produtos Ativos</h3>
+            <div id="lista-produtos">Carregando...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = ''; // Deixe vazio para usar a mesma URL do site
+
+    // Pega o token salvo no navegador
+    function getToken() { return localStorage.getItem('token_mercadobot'); }
+
+    // Alternar entre telas
+    function mostrarTela(idTela) {
+        document.getElementById('tela-login').classList.remove('ativo');
+        document.getElementById('tela-cadastro').classList.remove('ativo');
+        document.getElementById('tela-dashboard').classList.remove('ativo');
+        document.getElementById(idTela).classList.add('ativo');
+    }
+
+    // --- AUTENTICAÇÃO ---
+    async function fazerCadastro() {
+        const email = document.getElementById('cad-email').value;
+        const senha = document.getElementById('cad-senha').value;
+        const res = await fetch(API_URL + '/api/auth/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, senha })
+        });
+        const data = await res.json();
+        if(res.ok) { alert(data.msg); mostrarTela('tela-login'); } 
+        else { alert(data.erro); }
+    }
+
+    async function fazerLogin() {
+        const email = document.getElementById('login-email').value;
+        const senha = document.getElementById('login-senha').value;
+        const res = await fetch(API_URL + '/api/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, senha })
+        });
+        const data = await res.json();
+        if(res.ok) {
+            localStorage.setItem('token_mercadobot', data.token);
+            iniciarDashboard();
+        } else { alert(data.erro); }
+    }
+
+    function sair() {
+        localStorage.removeItem('token_mercadobot');
+        mostrarTela('tela-login');
+    }
+
+    // --- DASHBOARD ---
+    function iniciarDashboard() {
+        if(!getToken()) return mostrarTela('tela-login');
+        mostrarTela('tela-dashboard');
+        carregarProdutos();
+    }
+
+    // Gerar link do Mercado Livre exclusivo para este usuário
+    async function conectarML() {
+        const res = await fetch(API_URL + '/api/ml/auth-url', {
+            headers: { 'Authorization': getToken() }
+        });
+        if(res.ok) {
+            const data = await res.json();
+            window.location.href = data.url; // Redireciona pro ML
+        } else {
+            alert("Sessão expirada. Faça login novamente."); sair();
+        }
+    }
+
+    // --- GESTÃO DE PRODUTOS ---
+    async function carregarProdutos() {
+        const res = await fetch(API_URL + '/api/produtos', {
+            headers: { 'Authorization': getToken() }
+        });
+        if(!res.ok) return sair(); // Se der erro, joga pro login
+        
+        const lista = await res.json();
+        const html = lista.map(p => `
+            <div class="item">
+                <div>
+                    <strong>${p.nome}</strong> <small>(${p.id_anuncio})</small><br>
+                    <span style="color:#666">${p.mensagem}</span>
+                </div>
+                <button class="btn-del" onclick="deletarProduto('${p._id}')">Excluir</button>
+            </div>
+        `).join('');
+        document.getElementById('lista-produtos').innerHTML = html || "Nenhum produto cadastrado.";
+    }
+
+    async function salvarProduto() {
+        const nome = document.getElementById('nome').value;
+        const id_anuncio = document.getElementById('mlb').value;
+        const mensagem = document.getElementById('msg').value;
+        
+        await fetch(API_URL + '/api/produtos', {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': getToken() },
+            body: JSON.stringify({ nome, id_anuncio, mensagem })
+        });
+        
+        document.getElementById('nome').value = '';
+        document.getElementById('mlb').value = '';
+        document.getElementById('msg').value = '';
+        carregarProdutos();
+        alert('Produto salvo com sucesso!');
+    }
+
+    async function deletarProduto(id) {
+        if(confirm('Tem certeza que deseja excluir?')) {
+            await fetch(API_URL + '/api/produtos/' + id, {
+                method: 'DELETE', headers: { 'Authorization': getToken() }
+            });
+            carregarProdutos();
+        }
+    }
+
+    // Quando a página abre, verifica se já está logado
+    if(getToken()) { iniciarDashboard(); } 
+    else { mostrarTela('tela-login'); }
+
+</script>
+</body>
+</html>
