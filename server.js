@@ -20,7 +20,7 @@ mongoose.connect(process.env.MONGODB_URI)
 const UsuarioSchema = new mongoose.Schema({
     email: { type: String, unique: true, required: true },
     senha: { type: String, required: true },
-    status: { type: String, default: 'ativo' } // NOVO: Controle de Inadimplência
+    status: { type: String, default: 'bloqueado' } // ALTERADO: Agora todos nascem bloqueados
 });
 const Usuario = mongoose.model('Usuario', UsuarioSchema);
 
@@ -62,16 +62,20 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const hash = await bcrypt.hash(req.body.senha, 10);
         await Usuario.create({ email: req.body.email, senha: hash });
-        res.json({ ok: true, msg: 'Cliente cadastrado com sucesso!' });
+        res.json({ ok: true, msg: 'Conta criada! Aguarde a liberação do administrador.' }); // Mensagem atualizada
     } catch (e) { res.status(400).json({ erro: 'Email já existe.' }); }
 });
 
 app.post('/api/auth/login', async (req, res) => {
     const u = await Usuario.findOne({ email: req.body.email });
     if (u && await bcrypt.compare(req.body.senha, u.senha)) {
-        if (u.status !== 'ativo') return res.status(403).json({ erro: 'Conta suspensa. Contate o suporte.' });
-        
         const isSuperAdmin = u.email === process.env.ADMIN_EMAIL;
+        
+        // Bloqueia se não for admin E estiver com status bloqueado
+        if (!isSuperAdmin && u.status !== 'ativo') {
+            return res.status(403).json({ erro: 'Sua conta ainda não foi ativada. Contate o suporte.' });
+        }
+        
         const token = jwt.sign({ id: u._id, isAdmin: isSuperAdmin }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, isAdmin: isSuperAdmin, msg: 'Login efetuado!' });
     } else { 
@@ -115,7 +119,7 @@ app.get('/callback', async (req, res) => {
     } catch (e) { res.status(500).send('Erro ao conectar com Mercado Livre.'); }
 });
 
-// --- RECEBENDO VENDAS (A TRAVA DE SEGURANÇA) ---
+// --- RECEBENDO VENDAS ---
 async function getValidToken(tokenData) {
     const agora = new Date();
     const expira = new Date(tokenData.updated_at.getTime() + (tokenData.expires_in * 1000));
@@ -149,7 +153,7 @@ app.post('/notifications', async (req, res) => {
             // TRAVA DE SEGURANÇA: O cliente pagou a conta?
             const dono = await Usuario.findById(tokenData.usuarioId);
             if (!dono || dono.status !== 'ativo') {
-                console.log(`🚫 Venda ignorada: Cliente ${dono.email} está BLOQUEADO.`);
+                console.log(`🚫 Venda ignorada: Cliente ${dono.email} não está ativo.`);
                 return;
             }
 
