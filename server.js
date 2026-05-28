@@ -139,12 +139,20 @@ async function getValidToken(tokenData) {
 }
 
 app.post('/notifications', async (req, res) => {
+    // 1. Responde o Mercado Livre na hora para ele parar de insistir
     res.status(200).send('OK');
     const { resource, topic, user_id } = req.body;
     
     if (topic === 'orders_v2' || topic === 'orders') {
         const idVenda = resource.split('/').pop();
-        if (await VendaProcessada.findOne({ id_venda: idVenda })) return; 
+
+        // 🔥 A MÁGICA ACONTECE AQUI: Tenta "trancar" a venda no banco imediatamente
+        try {
+            await VendaProcessada.create({ id_venda: idVenda });
+        } catch (err) {
+            // Se cair aqui, é porque o MongoDB avisou que essa venda já existe. Ignoramos as duplicatas!
+            return console.log(`🔄 Notificação duplicada ignorada (Venda ${idVenda})`);
+        }
 
         try {
             const tokenData = await Token.findOne({ ml_user_id: String(user_id) });
@@ -153,26 +161,32 @@ app.post('/notifications', async (req, res) => {
             // TRAVA DE SEGURANÇA: O cliente pagou a conta?
             const dono = await Usuario.findById(tokenData.usuarioId);
             if (!dono || dono.status !== 'ativo') {
-                console.log(`🚫 Venda ignorada: Cliente ${dono.email} não está ativo.`);
-                return;
+                return console.log(`🚫 Venda ignorada: Cliente ${dono?.email} não está ativo.`);
             }
 
             const accessToken = await getValidToken(tokenData);
             if (!accessToken) return;
 
+            // Busca detalhes da venda
             const venda = (await axios.get(`https://api.mercadolibre.com${resource}`, { headers: { Authorization: `Bearer ${accessToken}` } })).data;
             const itemID = venda.order_items[0].item.id;
             
+            // Busca a mensagem do produto
             const produto = await Produto.findOne({ usuarioId: tokenData.usuarioId, id_anuncio: itemID });
             
             if (produto) {
+                // Envia a mensagem
                 await axios.post(`https://api.mercadolibre.com/messages/packs/${venda.pack_id || venda.id}/sellers/${user_id}?tag=post_sale`, 
                     { from: { user_id }, to: { user_id: venda.buyer.id }, text: produto.mensagem }, 
                     { headers: { Authorization: `Bearer ${accessToken}` } }
                 );
-                await VendaProcessada.create({ id_venda: idVenda });
+                console.log(`✅ Mensagem única enviada para a venda ${idVenda}`);
             }
-        } catch (e) { console.error('❌ Erro Notificação:', e.message); }
+        } catch (e) { 
+            console.error('❌ Erro Notificação:', e.message); 
+            // Se der erro ao enviar a mensagem, destrancamos a venda para a próxima notificação tentar de novo
+            await VendaProcessada.findOneAndDelete({ id_venda: idVenda });
+        }
     }
 });
 
