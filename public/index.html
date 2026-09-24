@@ -11,22 +11,22 @@
         .ativo { display: block !important; }
         .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 50px; text-align: center; }
         .card-dash { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h1, h2 { color: #333; }
-        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        h1, h2, h3 { color: #333; margin-top: 0; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
         button { background: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.3s; }
         button:hover { background: #0056b3; }
         .btn-ml { background: #ffe600; color: #333; font-weight: bold; }
         .btn-ml:hover { background: #e6cf00; }
         .btn-sair { background: #dc3545; width: auto; float: right; padding: 8px 15px; margin-top: 0; }
         .link { color: #007bff; cursor: pointer; text-decoration: underline; margin-top: 15px; display: inline-block; }
-        .item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; text-align: left; }
+        .item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
         .btn-del { background: #dc3545; color: white; width: auto; padding: 8px 12px; margin: 0; }
-        
-        /* Estilos do Admin */
         #painel-admin { display: none; background: #343a40; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .admin-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #4f5b66; }
         .btn-status { background: #ffc107; color: black; padding: 5px 10px; width: auto; margin: 0; }
         .bloqueado { color: #dc3545; font-weight: bold; }
+        label { text-align: left; display: block; font-weight: bold; color: #555; }
+        .upsell-box { background: #f8f9fa; border: 1px dashed #ccc; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -55,7 +55,7 @@
         </div>
 
         <div id="painel-admin">
-            <h3>👑 Área do Administrador (Gestão de Clientes)</h3>
+            <h3>👑 Área do Administrador</h3>
             <div id="lista-clientes">Carregando clientes...</div>
         </div>
 
@@ -66,9 +66,23 @@
 
         <div class="card-dash">
             <h3>📦 Passo 2: Cadastrar Produto</h3>
-            <input type="text" id="nome" placeholder="Nome do Produto">
-            <input type="text" id="mlb" placeholder="ID do Anúncio (MLB...)">
-            <textarea id="msg" rows="4" placeholder="Mensagem para o cliente..."></textarea>
+            <label>Nome do Produto (Para controle)</label>
+            <input type="text" id="nome" placeholder="Ex: Planilha de Finanças">
+            
+            <label>ID do Anúncio (Obrigatório)</label>
+            <input type="text" id="mlb" placeholder="Ex: MLB123456789">
+            
+            <label>Mensagem 1: Imediata (Entrega do Produto)</label>
+            <textarea id="msg" rows="3" placeholder="Mensagem enviada no momento da compra..."></textarea>
+            
+            <div class="upsell-box">
+                <label style="color: #d81b60;">⭐ Mensagem 2: Pós-Venda / Brinde (Opcional)</label>
+                <textarea id="msg_pos" rows="3" placeholder="Mensagem enviada com o brinde para pedir avaliação..."></textarea>
+                
+                <label style="color: #d81b60;">Enviar a Mensagem 2 após quantas horas?</label>
+                <input type="number" id="tempo" placeholder="Ex: 24" value="24" min="1">
+            </div>
+
             <button onclick="salvarProduto()">Salvar Produto</button>
         </div>
 
@@ -92,22 +106,18 @@
     }
 
     async function fazerCadastro() {
-        const email = document.getElementById('cad-email').value;
-        const senha = document.getElementById('cad-senha').value;
         const res = await fetch(API_URL + '/api/auth/register', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, senha })
+            body: JSON.stringify({ email: document.getElementById('cad-email').value, senha: document.getElementById('cad-senha').value })
         });
         const data = await res.json();
         if(res.ok) { alert(data.msg); mostrarTela('tela-login'); } else { alert(data.erro); }
     }
 
     async function fazerLogin() {
-        const email = document.getElementById('login-email').value;
-        const senha = document.getElementById('login-senha').value;
         const res = await fetch(API_URL + '/api/auth/login', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, senha })
+            body: JSON.stringify({ email: document.getElementById('login-email').value, senha: document.getElementById('login-senha').value })
         });
         const data = await res.json();
         if(res.ok) {
@@ -117,27 +127,18 @@
         } else { alert(data.erro); }
     }
 
-    function sair() {
-        localStorage.clear();
-        document.getElementById('painel-admin').style.display = 'none';
-        mostrarTela('tela-login');
-    }
+    function sair() { localStorage.clear(); document.getElementById('painel-admin').style.display = 'none'; mostrarTela('tela-login'); }
 
     function iniciarDashboard() {
         if(!getToken()) return mostrarTela('tela-login');
         mostrarTela('tela-dashboard');
         carregarProdutos();
-        
-        if (isAdmin()) {
-            document.getElementById('painel-admin').style.display = 'block';
-            carregarClientes();
-        }
+        if (isAdmin()) { document.getElementById('painel-admin').style.display = 'block'; carregarClientes(); }
     }
 
     async function conectarML() {
         const res = await fetch(API_URL + '/api/ml/auth-url', { headers: { 'Authorization': getToken() } });
-        if(res.ok) { window.location.href = (await res.json()).url; } 
-        else { alert("Sessão expirada."); sair(); }
+        if(res.ok) window.location.href = (await res.json()).url; else { alert("Sessão expirada."); sair(); }
     }
 
     async function carregarProdutos() {
@@ -146,7 +147,11 @@
         const lista = await res.json();
         document.getElementById('lista-produtos').innerHTML = lista.map(p => `
             <div class="item">
-                <div><strong>${p.nome}</strong> (${p.id_anuncio})<br><small>${p.mensagem}</small></div>
+                <div style="flex-grow: 1; padding-right: 10px;">
+                    <strong>${p.nome}</strong> (${p.id_anuncio})<br>
+                    <small><b>Msg 1:</b> ${p.mensagem}</small><br>
+                    ${p.mensagem_pos_venda ? `<small style="color: #d81b60;"><b>Msg 2 (em ${p.tempo_espera_horas}h):</b>${p.mensagem_pos_venda}</small>` : ''}
+                </div>
                 <button class="btn-del" onclick="deletarProduto('${p._id}')">X</button>
             </div>
         `).join('') || "Nenhum produto cadastrado.";
@@ -158,10 +163,15 @@
             body: JSON.stringify({
                 nome: document.getElementById('nome').value,
                 id_anuncio: document.getElementById('mlb').value,
-                mensagem: document.getElementById('msg').value
+                mensagem: document.getElementById('msg').value,
+                mensagem_pos_venda: document.getElementById('msg_pos').value,
+                tempo_espera_horas: parseInt(document.getElementById('tempo').value) || 24
             })
         });
-        carregarProdutos(); alert('Salvo!');
+        carregarProdutos(); 
+        document.getElementById('nome').value = ''; document.getElementById('mlb').value = ''; 
+        document.getElementById('msg').value = ''; document.getElementById('msg_pos').value = '';
+        alert('Produto salvo com sucesso!');
     }
 
     async function deletarProduto(id) {
@@ -171,31 +181,23 @@
         }
     }
 
-    // --- FUNÇÕES DO ADMINISTRADOR ---
     async function carregarClientes() {
         const res = await fetch(API_URL + '/api/admin/usuarios', { headers: { 'Authorization': getToken() } });
         const clientes = await res.json();
         document.getElementById('lista-clientes').innerHTML = clientes.map(c => `
             <div class="admin-item">
-                <div>
-                    <strong>${c.email}</strong> 
-                    <span class="${c.status === 'bloqueado' ? 'bloqueado' : ''}">(${c.status})</span>
-                </div>
-                <button class="btn-status" onclick="mudarStatus('${c._id}')">
-                    ${c.status === 'ativo' ? 'Bloquear 🚫' : 'Desbloquear ✅'}
-                </button>
+                <div><strong>${c.email}</strong> <span class="${c.status === 'bloqueado' ? 'bloqueado' : ''}">(${c.status})</span></div>
+                <button class="btn-status" onclick="mudarStatus('${c._id}')">${c.status === 'ativo' ? 'Bloquear 🚫' : 'Desbloquear ✅'}</button>
             </div>
         `).join('');
     }
 
     async function mudarStatus(id) {
-        await fetch(API_URL + '/api/admin/usuarios/' + id + '/status', { 
-            method: 'PUT', headers: { 'Authorization': getToken() } 
-        });
-        carregarClientes(); // Recarrega a lista
+        await fetch(API_URL + '/api/admin/usuarios/' + id + '/status', { method: 'PUT', headers: { 'Authorization': getToken() } });
+        carregarClientes();
     }
 
-    if(getToken()) { iniciarDashboard(); } else { mostrarTela('tela-login'); }
+    if(getToken()) iniciarDashboard(); else mostrarTela('tela-login');
 </script>
 </body>
 </html>
