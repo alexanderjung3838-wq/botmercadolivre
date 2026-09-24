@@ -21,6 +21,8 @@
         .link { color: #007bff; cursor: pointer; text-decoration: underline; margin-top: 15px; display: inline-block; }
         .item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
         .btn-del { background: #dc3545; color: white; width: auto; padding: 8px 12px; margin: 0; }
+        .btn-edit { background: #28a745; color: white; width: auto; padding: 8px 12px; margin: 0; margin-right: 5px; }
+        .acoes-item { display: flex; align-items: flex-start; }
         #painel-admin { display: none; background: #343a40; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .admin-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #4f5b66; }
         .btn-status { background: #ffc107; color: black; padding: 5px 10px; width: auto; margin: 0; }
@@ -65,7 +67,7 @@
         </div>
 
         <div class="card-dash">
-            <h3>📦 Passo 2: Cadastrar Produto</h3>
+            <h3 id="titulo-form">📦 Passo 2: Cadastrar Produto</h3>
             <label>Nome do Produto (Para controle)</label>
             <input type="text" id="nome" placeholder="Ex: Planilha de Finanças">
             
@@ -95,6 +97,8 @@
 
 <script>
     const API_URL = ''; 
+    let produtosCadastrados = []; // Array global para guardar os produtos na memória
+
     function getToken() { return localStorage.getItem('token_mercadobot'); }
     function isAdmin() { return localStorage.getItem('is_admin') === 'true'; }
 
@@ -144,17 +148,36 @@
     async function carregarProdutos() {
         const res = await fetch(API_URL + '/api/produtos', { headers: { 'Authorization': getToken() } });
         if(!res.ok) return sair();
-        const lista = await res.json();
-        document.getElementById('lista-produtos').innerHTML = lista.map(p => `
+        
+        produtosCadastrados = await res.json(); // Guarda os produtos na memória
+        
+        document.getElementById('lista-produtos').innerHTML = produtosCadastrados.map((p, index) => `
             <div class="item">
                 <div style="flex-grow: 1; padding-right: 10px;">
                     <strong>${p.nome}</strong> (${p.id_anuncio})<br>
                     <small><b>Msg 1:</b> ${p.mensagem}</small><br>
                     ${p.mensagem_pos_venda ? `<small style="color: #d81b60;"><b>Msg 2 (em ${p.tempo_espera_horas}h):</b>${p.mensagem_pos_venda}</small>` : ''}
                 </div>
-                <button class="btn-del" onclick="deletarProduto('${p._id}')">X</button>
+                <div class="acoes-item">
+                    <button class="btn-edit" onclick="editarProduto(${index})">✏️</button>
+                    <button class="btn-del" onclick="deletarProduto('${p._id}')">X</button>
+                </div>
             </div>
         `).join('') || "Nenhum produto cadastrado.";
+    }
+
+    function editarProduto(index) {
+        const p = produtosCadastrados[index];
+        
+        // Joga os dados de volta para o formulário
+        document.getElementById('nome').value = p.nome || '';
+        document.getElementById('mlb').value = p.id_anuncio || '';
+        document.getElementById('msg').value = p.mensagem || '';
+        document.getElementById('msg_pos').value = p.mensagem_pos_venda || '';
+        document.getElementById('tempo').value = p.tempo_espera_horas || 24;
+        
+        // Rola a tela suavemente para o formulário
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function salvarProduto() {
@@ -169,8 +192,11 @@
             })
         });
         carregarProdutos(); 
+        
+        // Limpa o formulário após salvar
         document.getElementById('nome').value = ''; document.getElementById('mlb').value = ''; 
         document.getElementById('msg').value = ''; document.getElementById('msg_pos').value = '';
+        
         alert('Produto salvo com sucesso!');
     }
 
