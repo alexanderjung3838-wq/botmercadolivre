@@ -9,69 +9,54 @@
         body { 
             font-family: 'Poppins', sans-serif; 
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
-            color: #e2e8f0; 
-            margin: 0; 
-            padding: 0; 
-            display: flex; 
-            justify-content: center; 
-            min-height: 100vh; 
+            color: #e2e8f0; margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; 
         }
         .container { width: 100%; max-width: 800px; padding: 20px; box-sizing: border-box; }
         
-        #tela-login, #tela-cadastro, #tela-dashboard { display: none; animation: fadeIn 0.5s ease; }
+        #tela-login, #tela-cadastro, #tela-dashboard, #tela-pendente { display: none; animation: fadeIn 0.5s ease; }
         .ativo { display: block !important; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .card, .card-dash { 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-            border-radius: 16px; 
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); 
-            padding: 40px; 
-            text-align: center;
+            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; 
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); padding: 40px; text-align: center;
         }
         .card { margin-top: 8vh; max-width: 400px; margin-left: auto; margin-right: auto; }
         .card-dash { margin-bottom: 25px; padding: 30px; text-align: left; }
 
-        h1, h2, h3 { color: #ffffff; margin-top: 0; font-weight: 600; }
+        h1, h2, h3, h4 { color: #ffffff; margin-top: 0; font-weight: 600; }
         h2 { margin-bottom: 25px; }
         label { text-align: left; display: block; font-weight: 400; color: #cbd5e1; font-size: 14px; margin-bottom: 5px; }
         
         input, textarea { 
-            width: 100%; padding: 14px; margin-bottom: 20px; 
-            background: rgba(0, 0, 0, 0.2); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 8px; box-sizing: border-box; 
-            font-size: 15px; color: #ffffff; 
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.3s ease;
+            width: 100%; padding: 14px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.2); 
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; box-sizing: border-box; 
+            font-size: 15px; color: #ffffff; font-family: 'Poppins', sans-serif; transition: all 0.3s ease;
         }
         input:focus, textarea:focus { outline: none; border-color: #3b82f6; background: rgba(0, 0, 0, 0.4); box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
-        input::placeholder, textarea::placeholder { color: #64748b; }
-
+        
         .input-group { position: relative; margin-bottom: 20px; }
         .input-group input { margin-bottom: 0; padding-right: 45px; }
-        .toggle-senha { 
-            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            cursor: pointer; opacity: 0.6; user-select: none; font-size: 18px;
-        }
+        .toggle-senha { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; opacity: 0.6; user-select: none; font-size: 18px; }
         .toggle-senha:hover { opacity: 1; }
 
         button { 
-            background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); 
-            color: white; border: none; padding: 14px 20px; font-size: 16px; 
-            border-radius: 8px; cursor: pointer; width: 100%; font-weight: 600;
-            transition: 0.3s; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); color: white; border: none; padding: 14px 20px; 
+            font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: 600; transition: 0.3s; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
         }
         button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5); }
         
+        /* Botão WhatsApp Especial */
+        .btn-wpp { background: linear-gradient(90deg, #128C7E 0%, #25D366 100%); box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2); margin-top: 15px;}
+        .btn-wpp:hover { background: linear-gradient(90deg, #075E54 0%, #128C7E 100%); box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); }
+
         .btn-ml { background: #ffe600; color: #333; box-shadow: 0 4px 15px rgba(255, 230, 0, 0.2); }
         .btn-ml:hover { background: #facc15; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 230, 0, 0.4); }
         .btn-sair { background: transparent; border: 1px solid #ef4444; color: #ef4444; width: auto; float: right; padding: 8px 20px; margin-top: 0; box-shadow: none; }
         .btn-sair:hover { background: #ef4444; color: white; }
+        
         .btn-del { background: rgba(239, 68, 68, 0.2); color: #ef4444; width: auto; padding: 8px 12px; margin: 0; box-shadow: none; border: 1px solid rgba(239, 68, 68, 0.3); }
         .btn-del:hover { background: #ef4444; color: white; }
         .btn-edit { background: rgba(34, 197, 94, 0.2); color: #22c55e; width: auto; padding: 8px 12px; margin: 0; margin-right: 5px; box-shadow: none; border: 1px solid rgba(34, 197, 94, 0.3); }
@@ -86,7 +71,7 @@
         
         #painel-admin { display: none; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid rgba(99, 102, 241, 0.3); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .admin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .btn-status { background: #f59e0b; color: white; padding: 6px 15px; width: auto; margin: 0; font-size: 14px; box-shadow: none; }
+        .btn-status { background: #f59e0b; color: white; padding: 6px 15px; width: auto; margin: 0; margin-right: 5px; font-size: 14px; box-shadow: none; }
         .bloqueado { color: #f87171; font-weight: 600; }
         .ativo-status { color: #4ade80; font-weight: 600; }
 
@@ -97,6 +82,7 @@
 <body>
 
 <div class="container">
+    <!-- TELA DE LOGIN -->
     <div id="tela-login" class="card ativo">
         <h2>🤖 MercadoBot SaaS</h2>
         <input type="email" id="login-email" placeholder="E-mail de Acesso">
@@ -108,6 +94,7 @@
         <span class="link" onclick="mostrarTela('tela-cadastro')">Criar minha conta gratuita</span>
     </div>
 
+    <!-- TELA DE CADASTRO -->
     <div id="tela-cadastro" class="card">
         <h2>Nova Conta</h2>
         <input type="email" id="cad-email" placeholder="Seu melhor E-mail">
@@ -120,6 +107,18 @@
         <span class="link" onclick="mostrarTela('tela-login')">Já tenho conta, acessar painel</span>
     </div>
 
+    <!-- NOVA: TELA DE ESPERA / BLOQUEIO -->
+    <div id="tela-pendente" class="card">
+        <h2>⏳ Pré-Cadastro Concluído</h2>
+        <p id="txt-pendente" style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin-bottom: 25px;"></p>
+        <a id="link-wpp" href="#" target="_blank" style="text-decoration: none;">
+            <button class="btn-wpp">📲 Falar no WhatsApp</button>
+        </a>
+        <br>
+        <span class="link" onclick="mostrarTela('tela-login')">Voltar para o Login</span>
+    </div>
+
+    <!-- TELA DO SISTEMA -->
     <div id="tela-dashboard">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; margin-top: 20px;">
             <h2 style="margin: 0;">Painel de Controle</h2>
@@ -128,6 +127,18 @@
 
         <div id="painel-admin">
             <h3>👑 Área de Gestão (Exclusivo Dono)</h3>
+            
+            <!-- Configurações Globais -->
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px dashed rgba(255,255,255,0.2); text-align: left;">
+                <h4 style="margin-top: 0; color: #cbd5e1;">⚙️ Personalizar Tela de Espera</h4>
+                <label>Mensagem para os usuários que acabaram de se cadastrar:</label>
+                <textarea id="admin-msg-bloqueio" rows="2"></textarea>
+                <label>Número do seu WhatsApp de Suporte (Ex: 5511999999999):</label>
+                <input type="text" id="admin-wpp">
+                <button onclick="salvarConfigAdmin()" style="background: #10b981; margin-top: 5px;">Salvar Configurações</button>
+            </div>
+
+            <h4 style="color: #cbd5e1; margin-bottom: 15px; text-align: left;">👥 Gerenciar Clientes</h4>
             <div id="lista-clientes">Carregando usuários...</div>
         </div>
 
@@ -139,24 +150,19 @@
 
         <div class="card-dash">
             <h3 id="titulo-form">📦 Passo 2: Configurar Automação</h3>
-            
             <label>Identificação do Produto</label>
-            <input type="text" id="nome" placeholder="Ex: Planilha de Finanças Pessoais">
-            
+            <input type="text" id="nome" placeholder="Ex: Planilha de Finanças">
             <label>ID do Anúncio no Mercado Livre (Obrigatório)</label>
             <input type="text" id="mlb" placeholder="Ex: MLB123456789">
-            
             <label>Mensagem 1: Envio Imediato (Entrega)</label>
-            <textarea id="msg" rows="3" placeholder="Mensagem enviada no exato momento da aprovação da compra..."></textarea>
+            <textarea id="msg" rows="3" placeholder="Mensagem enviada no exato momento..."></textarea>
             
             <div class="upsell-box">
                 <label class="destaque-rosa">⭐ Mensagem 2: Pós-Venda Estratégico (Opcional)</label>
-                <textarea id="msg_pos" rows="3" placeholder="Mensagem enviada com link de bônus ou pedido de avaliação..."></textarea>
-                
+                <textarea id="msg_pos" rows="3" placeholder="Mensagem enviada com link de bônus..."></textarea>
                 <label class="destaque-rosa" style="margin-top: 15px;">Tempo de espera (em horas) para enviar a Mensagem 2</label>
                 <input type="number" id="tempo" placeholder="Ex: 24" value="24" min="1" style="margin-bottom: 0;">
             </div>
-
             <button onclick="salvarProduto()">Salvar Automação</button>
         </div>
 
@@ -173,13 +179,8 @@
 
     function toggleSenha(idTarget, el) {
         const input = document.getElementById(idTarget);
-        if(input.type === 'password') {
-            input.type = 'text';
-            el.innerText = '🙈';
-        } else {
-            input.type = 'password';
-            el.innerText = '👁️';
-        }
+        if(input.type === 'password') { input.type = 'text'; el.innerText = '🙈'; } 
+        else { input.type = 'password'; el.innerText = '👁️'; }
     }
 
     function getToken() { return localStorage.getItem('token_mercadobot'); }
@@ -189,29 +190,41 @@
         document.getElementById('tela-login').classList.remove('ativo');
         document.getElementById('tela-cadastro').classList.remove('ativo');
         document.getElementById('tela-dashboard').classList.remove('ativo');
+        document.getElementById('tela-pendente').classList.remove('ativo');
         document.getElementById(idTela).classList.add('ativo');
         
-        document.getElementById('cad-email').value = '';
-        document.getElementById('cad-email-confirma').value = '';
-        document.getElementById('cad-senha').value = '';
-        document.getElementById('login-email').value = '';
-        document.getElementById('login-senha').value = '';
+        document.getElementById('cad-email').value = ''; document.getElementById('cad-email-confirma').value = '';
+        document.getElementById('cad-senha').value = ''; document.getElementById('login-email').value = ''; document.getElementById('login-senha').value = '';
+    }
+
+    function montarTelaEspera(msg, wpp) {
+        document.getElementById('txt-pendente').innerText = msg;
+        document.getElementById('link-wpp').href = `https://wa.me/${wpp}`;
+    }
+
+    async function buscarConfigPublica() {
+        const res = await fetch(API_URL + '/api/config/bloqueio');
+        const conf = await res.json();
+        montarTelaEspera(conf.mensagem_bloqueio, conf.whatsapp);
     }
 
     async function fazerCadastro() {
         const email = document.getElementById('cad-email').value;
         const emailConf = document.getElementById('cad-email-confirma').value;
         const senha = document.getElementById('cad-senha').value;
-
         if (!email || !emailConf || !senha) return alert("Preencha todos os campos.");
-        if (email !== emailConf) return alert("Os e-mails não conferem. Verifique a digitação.");
+        if (email !== emailConf) return alert("Os e-mails não conferem.");
 
         const res = await fetch(API_URL + '/api/auth/register', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, senha })
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, senha })
         });
         const data = await res.json();
-        if(res.ok) { alert(data.msg); mostrarTela('tela-login'); } else { alert(data.erro); }
+        
+        if(res.ok) { 
+            // Cadastro feito! Busca texto e mostra tela de espera.
+            await buscarConfigPublica();
+            mostrarTela('tela-pendente'); 
+        } else { alert(data.erro); }
     }
 
     async function fazerLogin() {
@@ -224,29 +237,39 @@
             localStorage.setItem('token_mercadobot', data.token);
             localStorage.setItem('is_admin', data.isAdmin);
             iniciarDashboard();
-        } else { alert(data.erro); }
+        } else {
+            // Se foi barrado porque está bloqueado, vai pra tela de espera
+            if(data.erro === 'bloqueado') {
+                montarTelaEspera(data.msg, data.wpp);
+                mostrarTela('tela-pendente');
+            } else {
+                alert(data.erro);
+            }
+        }
     }
 
     function sair() { localStorage.clear(); document.getElementById('painel-admin').style.display = 'none'; mostrarTela('tela-login'); }
 
-    function iniciarDashboard() {
+    async function iniciarDashboard() {
         if(!getToken()) return mostrarTela('tela-login');
         mostrarTela('tela-dashboard');
         carregarProdutos();
-        if (isAdmin()) { document.getElementById('painel-admin').style.display = 'block'; carregarClientes(); }
+        if (isAdmin()) { 
+            document.getElementById('painel-admin').style.display = 'block'; 
+            carregarClientes(); 
+            carregarConfigAdmin();
+        }
     }
 
     async function conectarML() {
         const res = await fetch(API_URL + '/api/ml/auth-url', { headers: { 'Authorization': getToken() } });
-        if(res.ok) window.location.href = (await res.json()).url; else { alert("Sessão expirada. Faça login novamente."); sair(); }
+        if(res.ok) window.location.href = (await res.json()).url; else { alert("Sessão expirada."); sair(); }
     }
 
     async function carregarProdutos() {
         const res = await fetch(API_URL + '/api/produtos', { headers: { 'Authorization': getToken() } });
         if(!res.ok) return sair();
-        
         produtosCadastrados = await res.json(); 
-        
         document.getElementById('lista-produtos').innerHTML = produtosCadastrados.map((p, index) => `
             <div class="item">
                 <div style="flex-grow: 1; padding-right: 15px;">
@@ -264,36 +287,37 @@
 
     function editarProduto(index) {
         const p = produtosCadastrados[index];
-        document.getElementById('nome').value = p.nome || '';
-        document.getElementById('mlb').value = p.id_anuncio || '';
-        document.getElementById('msg').value = p.mensagem || '';
-        document.getElementById('msg_pos').value = p.mensagem_pos_venda || '';
-        document.getElementById('tempo').value = p.tempo_espera_horas || 24;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('nome').value = p.nome || ''; document.getElementById('mlb').value = p.id_anuncio || '';
+        document.getElementById('msg').value = p.mensagem || ''; document.getElementById('msg_pos').value = p.mensagem_pos_venda || '';
+        document.getElementById('tempo').value = p.tempo_espera_horas || 24; window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function salvarProduto() {
         await fetch(API_URL + '/api/produtos', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': getToken() },
-            body: JSON.stringify({
-                nome: document.getElementById('nome').value,
-                id_anuncio: document.getElementById('mlb').value,
-                mensagem: document.getElementById('msg').value,
-                mensagem_pos_venda: document.getElementById('msg_pos').value,
-                tempo_espera_horas: parseInt(document.getElementById('tempo').value) || 24
-            })
+            body: JSON.stringify({ nome: document.getElementById('nome').value, id_anuncio: document.getElementById('mlb').value, mensagem: document.getElementById('msg').value, mensagem_pos_venda: document.getElementById('msg_pos').value, tempo_espera_horas: parseInt(document.getElementById('tempo').value) || 24 })
         });
         carregarProdutos(); 
         document.getElementById('nome').value = ''; document.getElementById('mlb').value = ''; 
-        document.getElementById('msg').value = ''; document.getElementById('msg_pos').value = '';
-        alert('Automação salva com sucesso!');
+        document.getElementById('msg').value = ''; document.getElementById('msg_pos').value = ''; alert('Automação salva!');
     }
 
     async function deletarProduto(id) {
-        if(confirm('Tem certeza que deseja excluir esta automação?')) {
-            await fetch(API_URL + '/api/produtos/' + id, { method: 'DELETE', headers: { 'Authorization': getToken() } });
-            carregarProdutos();
-        }
+        if(confirm('Tem certeza?')) { await fetch(API_URL + '/api/produtos/' + id, { method: 'DELETE', headers: { 'Authorization': getToken() } }); carregarProdutos(); }
+    }
+
+    // --- FUNÇÕES DO ADMIN ---
+    async function carregarConfigAdmin() {
+        const res = await fetch(API_URL + '/api/config/bloqueio'); const conf = await res.json();
+        document.getElementById('admin-msg-bloqueio').value = conf.mensagem_bloqueio;
+        document.getElementById('admin-wpp').value = conf.whatsapp;
+    }
+    async function salvarConfigAdmin() {
+        await fetch(API_URL + '/api/admin/config/bloqueio', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': getToken() },
+            body: JSON.stringify({ mensagem_bloqueio: document.getElementById('admin-msg-bloqueio').value, whatsapp: document.getElementById('admin-wpp').value })
+        });
+        alert('Configurações da Tela de Espera atualizadas com sucesso!');
     }
 
     async function carregarClientes() {
@@ -301,22 +325,23 @@
         const clientes = await res.json();
         document.getElementById('lista-clientes').innerHTML = clientes.map(c => `
             <div class="admin-item">
-                <div style="font-size: 15px;">
-                    <strong>${c.email}</strong> 
-                    <span class="${c.status === 'bloqueado' ? 'bloqueado' : 'ativo-status'}">
-                        (${c.status.toUpperCase()})
-                    </span>
+                <div style="font-size: 15px;"><strong>${c.email}</strong> <span class="${c.status === 'bloqueado' ? 'bloqueado' : 'ativo-status'}">(${c.status.toUpperCase()})</span></div>
+                <div style="display: flex;">
+                    <button class="btn-status" onclick="mudarStatus('${c._id}')" style="background: ${c.status === 'ativo' ? '#ef4444' : '#22c55e'};">${c.status === 'ativo' ? 'Bloquear Acesso' : 'Liberar Acesso'}</button>
+                    <button class="btn-del" onclick="excluirUsuario('${c._id}')" title="Excluir Definitivamente">🗑️</button>
                 </div>
-                <button class="btn-status" onclick="mudarStatus('${c._id}')" style="background: ${c.status === 'ativo' ? '#ef4444' : '#22c55e'};">
-                    ${c.status === 'ativo' ? 'Bloquear Acesso' : 'Liberar Acesso'}
-                </button>
             </div>
         `).join('');
     }
 
-    async function mudarStatus(id) {
-        await fetch(API_URL + '/api/admin/usuarios/' + id + '/status', { method: 'PUT', headers: { 'Authorization': getToken() } });
-        carregarClientes();
+    async function mudarStatus(id) { await fetch(API_URL + '/api/admin/usuarios/' + id + '/status', { method: 'PUT', headers: { 'Authorization': getToken() } }); carregarClientes(); }
+
+    async function excluirUsuario(id) {
+        if(confirm('🚨 ATENÇÃO! Tem certeza que deseja APAGAR este usuário DEFINITIVAMENTE? Todos os produtos e integrações dele serão perdidos.')) {
+            await fetch(API_URL + '/api/admin/usuarios/' + id, { method: 'DELETE', headers: { 'Authorization': getToken() } });
+            carregarClientes();
+            alert('Usuário apagado do sistema.');
+        }
     }
 
     if(getToken()) iniciarDashboard(); else mostrarTela('tela-login');
