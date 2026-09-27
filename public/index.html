@@ -4,100 +4,172 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MercadoBot - Seu Robô de Vendas</title>
+    <!-- Importação de Fonte Moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 800px; padding: 20px; }
-        #tela-login, #tela-cadastro, #tela-dashboard { display: none; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+            color: #e2e8f0; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh; 
+        }
+        .container { width: 100%; max-width: 800px; padding: 20px; box-sizing: border-box; }
+        
+        #tela-login, #tela-cadastro, #tela-dashboard { display: none; animation: fadeIn 0.5s ease; }
         .ativo { display: block !important; }
-        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 50px; text-align: center; }
-        .card-dash { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h1, h2, h3 { color: #333; margin-top: 0; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        button { background: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.3s; }
-        button:hover { background: #0056b3; }
-        .btn-ml { background: #ffe600; color: #333; font-weight: bold; }
-        .btn-ml:hover { background: #e6cf00; }
-        .btn-sair { background: #dc3545; width: auto; float: right; padding: 8px 15px; margin-top: 0; }
-        .link { color: #007bff; cursor: pointer; text-decoration: underline; margin-top: 15px; display: inline-block; }
-        .item { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
-        .btn-del { background: #dc3545; color: white; width: auto; padding: 8px 12px; margin: 0; }
-        .btn-edit { background: #28a745; color: white; width: auto; padding: 8px 12px; margin: 0; margin-right: 5px; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilo Glassmorphism (Efeito Vidro) */
+        .card, .card-dash { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            border-radius: 16px; 
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); 
+            padding: 40px; 
+            text-align: center;
+        }
+        .card { margin-top: 8vh; max-width: 400px; margin-left: auto; margin-right: auto; }
+        .card-dash { margin-bottom: 25px; padding: 30px; text-align: left; }
+
+        h1, h2, h3 { color: #ffffff; margin-top: 0; font-weight: 600; }
+        h2 { margin-bottom: 25px; }
+
+        label { text-align: left; display: block; font-weight: 400; color: #cbd5e1; font-size: 14px; margin-bottom: 5px; }
+        
+        /* Campos de Texto Modernos */
+        input, textarea { 
+            width: 100%; padding: 14px; margin-bottom: 20px; 
+            background: rgba(0, 0, 0, 0.2); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 8px; box-sizing: border-box; 
+            font-size: 15px; color: #ffffff; 
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #3b82f6; background: rgba(0, 0, 0, 0.4); box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
+        input::placeholder, textarea::placeholder { color: #64748b; }
+
+        /* Botões Premium */
+        button { 
+            background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); 
+            color: white; border: none; padding: 14px 20px; font-size: 16px; 
+            border-radius: 8px; cursor: pointer; width: 100%; font-weight: 600;
+            transition: 0.3s; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5); }
+        
+        .btn-ml { background: #ffe600; color: #333; box-shadow: 0 4px 15px rgba(255, 230, 0, 0.2); }
+        .btn-ml:hover { background: #facc15; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 230, 0, 0.4); }
+        
+        .btn-sair { background: transparent; border: 1px solid #ef4444; color: #ef4444; width: auto; float: right; padding: 8px 20px; margin-top: 0; box-shadow: none; }
+        .btn-sair:hover { background: #ef4444; color: white; }
+
+        .btn-del { background: rgba(239, 68, 68, 0.2); color: #ef4444; width: auto; padding: 8px 12px; margin: 0; box-shadow: none; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-del:hover { background: #ef4444; color: white; }
+        
+        .btn-edit { background: rgba(34, 197, 94, 0.2); color: #22c55e; width: auto; padding: 8px 12px; margin: 0; margin-right: 5px; box-shadow: none; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .btn-edit:hover { background: #22c55e; color: white; }
+
+        /* Links e Textos Auxiliares */
+        .link { color: #60a5fa; cursor: pointer; text-decoration: none; margin-top: 20px; display: inline-block; font-size: 14px; transition: 0.3s; }
+        .link:hover { color: #93c5fd; text-decoration: underline; }
+
+        /* Listas e Itens */
+        .item { border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding: 20px 0; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
+        .item:last-child { border-bottom: none; }
         .acoes-item { display: flex; align-items: flex-start; }
-        #painel-admin { display: none; background: #343a40; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .admin-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #4f5b66; }
-        .btn-status { background: #ffc107; color: black; padding: 5px 10px; width: auto; margin: 0; }
-        .bloqueado { color: #dc3545; font-weight: bold; }
-        label { text-align: left; display: block; font-weight: bold; color: #555; }
-        .upsell-box { background: #f8f9fa; border: 1px dashed #ccc; padding: 15px; border-radius: 5px; margin-bottom: 15px; }
+        
+        /* Painel Admin */
+        #painel-admin { display: none; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid rgba(99, 102, 241, 0.3); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .btn-status { background: #f59e0b; color: white; padding: 6px 15px; width: auto; margin: 0; font-size: 14px; box-shadow: none; }
+        .bloqueado { color: #f87171; font-weight: 600; }
+        .ativo-status { color: #4ade80; font-weight: 600; }
+
+        /* Destaque Bônus */
+        .upsell-box { background: rgba(0, 0, 0, 0.2); border: 1px dashed rgba(236, 72, 153, 0.4); padding: 20px; border-radius: 8px; margin-bottom: 20px; margin-top: 10px; }
+        .destaque-rosa { color: #f472b6; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- LOGIN -->
     <div id="tela-login" class="card ativo">
         <h2>🤖 MercadoBot SaaS</h2>
-        <input type="email" id="login-email" placeholder="Seu E-mail">
-        <input type="password" id="login-senha" placeholder="Sua Senha">
-        <button onclick="fazerLogin()">Entrar</button>
-        <span class="link" onclick="mostrarTela('tela-cadastro')">Não tem conta? Cadastre-se grátis</span>
+        <input type="email" id="login-email" placeholder="E-mail de Acesso">
+        <input type="password" id="login-senha" placeholder="Sua Senha Secreta">
+        <button onclick="fazerLogin()">Acessar Painel</button>
+        <span class="link" onclick="mostrarTela('tela-cadastro')">Criar minha conta gratuita</span>
     </div>
 
+    <!-- CADASTRO -->
     <div id="tela-cadastro" class="card">
-        <h2>Criar Nova Conta</h2>
-        <input type="email" id="cad-email" placeholder="E-mail">
-        <input type="password" id="cad-senha" placeholder="Senha">
+        <h2>Nova Conta</h2>
+        <input type="email" id="cad-email" placeholder="Seu melhor E-mail">
+        <input type="password" id="cad-senha" placeholder="Crie uma Senha">
         <button onclick="fazerCadastro()">Criar Conta</button>
-        <span class="link" onclick="mostrarTela('tela-login')">Já tenho conta, quero entrar</span>
+        <span class="link" onclick="mostrarTela('tela-login')">Já tenho conta, acessar painel</span>
     </div>
 
+    <!-- DASHBOARD -->
     <div id="tela-dashboard">
-        <div style="overflow: hidden; margin-bottom: 20px; margin-top: 20px;">
-            <h2 style="float: left; margin: 0;">Painel de Controle</h2>
-            <button class="btn-sair" onclick="sair()">Sair</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; margin-top: 20px;">
+            <h2 style="margin: 0;">Painel de Controle</h2>
+            <button class="btn-sair" onclick="sair()">Sair da Conta</button>
         </div>
 
         <div id="painel-admin">
-            <h3>👑 Área do Administrador</h3>
-            <div id="lista-clientes">Carregando clientes...</div>
+            <h3>👑 Área de Gestão (Exclusivo Dono)</h3>
+            <div id="lista-clientes">Carregando usuários...</div>
         </div>
 
         <div class="card-dash">
-            <h3>🔗 Passo 1: Conectar Conta</h3>
-            <button class="btn-ml" onclick="conectarML()">Conectar com Mercado Livre</button>
+            <h3>🔗 Passo 1: Integração</h3>
+            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 15px;">Conecte sua conta do Mercado Livre para permitir que o robô faça os envios automáticos.</p>
+            <button class="btn-ml" onclick="conectarML()">Autenticar no Mercado Livre</button>
         </div>
 
         <div class="card-dash">
-            <h3 id="titulo-form">📦 Passo 2: Cadastrar Produto</h3>
-            <label>Nome do Produto (Para controle)</label>
-            <input type="text" id="nome" placeholder="Ex: Planilha de Finanças">
+            <h3 id="titulo-form">📦 Passo 2: Configurar Automação</h3>
             
-            <label>ID do Anúncio (Obrigatório)</label>
+            <label>Identificação do Produto</label>
+            <input type="text" id="nome" placeholder="Ex: Planilha de Finanças Pessoais">
+            
+            <label>ID do Anúncio no Mercado Livre (Obrigatório)</label>
             <input type="text" id="mlb" placeholder="Ex: MLB123456789">
             
-            <label>Mensagem 1: Imediata (Entrega do Produto)</label>
-            <textarea id="msg" rows="3" placeholder="Mensagem enviada no momento da compra..."></textarea>
+            <label>Mensagem 1: Envio Imediato (Entrega)</label>
+            <textarea id="msg" rows="3" placeholder="Mensagem enviada no exato momento da aprovação da compra..."></textarea>
             
             <div class="upsell-box">
-                <label style="color: #d81b60;">⭐ Mensagem 2: Pós-Venda / Brinde (Opcional)</label>
-                <textarea id="msg_pos" rows="3" placeholder="Mensagem enviada com o brinde para pedir avaliação..."></textarea>
+                <label class="destaque-rosa">⭐ Mensagem 2: Pós-Venda Estratégico (Opcional)</label>
+                <textarea id="msg_pos" rows="3" placeholder="Mensagem enviada com link de bônus ou pedido de avaliação..."></textarea>
                 
-                <label style="color: #d81b60;">Enviar a Mensagem 2 após quantas horas?</label>
-                <input type="number" id="tempo" placeholder="Ex: 24" value="24" min="1">
+                <label class="destaque-rosa" style="margin-top: 15px;">Tempo de espera (em horas) para enviar a Mensagem 2</label>
+                <input type="number" id="tempo" placeholder="Ex: 24" value="24" min="1" style="margin-bottom: 0;">
             </div>
 
-            <button onclick="salvarProduto()">Salvar Produto</button>
+            <button onclick="salvarProduto()">Salvar Automação</button>
         </div>
 
         <div class="card-dash">
-            <h3>📋 Seus Produtos Ativos</h3>
-            <div id="lista-produtos">Carregando...</div>
+            <h3>📋 Automações Ativas</h3>
+            <div id="lista-produtos">Carregando dados...</div>
         </div>
     </div>
 </div>
 
 <script>
     const API_URL = ''; 
-    let produtosCadastrados = []; // Array global para guardar os produtos na memória
+    let produtosCadastrados = []; 
 
     function getToken() { return localStorage.getItem('token_mercadobot'); }
     function isAdmin() { return localStorage.getItem('is_admin') === 'true'; }
@@ -142,41 +214,37 @@
 
     async function conectarML() {
         const res = await fetch(API_URL + '/api/ml/auth-url', { headers: { 'Authorization': getToken() } });
-        if(res.ok) window.location.href = (await res.json()).url; else { alert("Sessão expirada."); sair(); }
+        if(res.ok) window.location.href = (await res.json()).url; else { alert("Sessão expirada. Faça login novamente."); sair(); }
     }
 
     async function carregarProdutos() {
         const res = await fetch(API_URL + '/api/produtos', { headers: { 'Authorization': getToken() } });
         if(!res.ok) return sair();
         
-        produtosCadastrados = await res.json(); // Guarda os produtos na memória
+        produtosCadastrados = await res.json(); 
         
         document.getElementById('lista-produtos').innerHTML = produtosCadastrados.map((p, index) => `
             <div class="item">
-                <div style="flex-grow: 1; padding-right: 10px;">
-                    <strong>${p.nome}</strong> (${p.id_anuncio})<br>
-                    <small><b>Msg 1:</b> ${p.mensagem}</small><br>
-                    ${p.mensagem_pos_venda ? `<small style="color: #d81b60;"><b>Msg 2 (em ${p.tempo_espera_horas}h):</b>${p.mensagem_pos_venda}</small>` : ''}
+                <div style="flex-grow: 1; padding-right: 15px;">
+                    <strong style="font-size: 16px; color: #fff;">${p.nome}</strong> <span style="color: #94a3b8; font-size: 13px;">(${p.id_anuncio})</span><br>
+                    <div style="margin-top: 8px; color: #cbd5e1; font-size: 14px;"><b>Msg 1:</b> ${p.mensagem}</div>
+                    ${p.mensagem_pos_venda ? `<div style="margin-top: 5px; color: #f472b6; font-size: 14px;"><b>Bônus (em ${p.tempo_espera_horas}h):</b>${p.mensagem_pos_venda}</div>` : ''}
                 </div>
                 <div class="acoes-item">
                     <button class="btn-edit" onclick="editarProduto(${index})">✏️</button>
-                    <button class="btn-del" onclick="deletarProduto('${p._id}')">X</button>
+                    <button class="btn-del" onclick="deletarProduto('${p._id}')">🗑️</button>
                 </div>
             </div>
-        `).join('') || "Nenhum produto cadastrado.";
+        `).join('') || "<p style='color: #94a3b8;'>Nenhum produto cadastrado no momento.</p>";
     }
 
     function editarProduto(index) {
         const p = produtosCadastrados[index];
-        
-        // Joga os dados de volta para o formulário
         document.getElementById('nome').value = p.nome || '';
         document.getElementById('mlb').value = p.id_anuncio || '';
         document.getElementById('msg').value = p.mensagem || '';
         document.getElementById('msg_pos').value = p.mensagem_pos_venda || '';
         document.getElementById('tempo').value = p.tempo_espera_horas || 24;
-        
-        // Rola a tela suavemente para o formulário
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -192,16 +260,13 @@
             })
         });
         carregarProdutos(); 
-        
-        // Limpa o formulário após salvar
         document.getElementById('nome').value = ''; document.getElementById('mlb').value = ''; 
         document.getElementById('msg').value = ''; document.getElementById('msg_pos').value = '';
-        
-        alert('Produto salvo com sucesso!');
+        alert('Automação salva com sucesso!');
     }
 
     async function deletarProduto(id) {
-        if(confirm('Excluir?')) {
+        if(confirm('Tem certeza que deseja excluir esta automação?')) {
             await fetch(API_URL + '/api/produtos/' + id, { method: 'DELETE', headers: { 'Authorization': getToken() } });
             carregarProdutos();
         }
@@ -212,8 +277,15 @@
         const clientes = await res.json();
         document.getElementById('lista-clientes').innerHTML = clientes.map(c => `
             <div class="admin-item">
-                <div><strong>${c.email}</strong> <span class="${c.status === 'bloqueado' ? 'bloqueado' : ''}">(${c.status})</span></div>
-                <button class="btn-status" onclick="mudarStatus('${c._id}')">${c.status === 'ativo' ? 'Bloquear 🚫' : 'Desbloquear ✅'}</button>
+                <div style="font-size: 15px;">
+                    <strong>${c.email}</strong> 
+                    <span class="${c.status === 'bloqueado' ? 'bloqueado' : 'ativo-status'}">
+                        (${c.status.toUpperCase()})
+                    </span>
+                </div>
+                <button class="btn-status" onclick="mudarStatus('${c._id}')" style="background: ${c.status === 'ativo' ? '#ef4444' : '#22c55e'};">
+                    ${c.status === 'ativo' ? 'Bloquear Acesso' : 'Liberar Acesso'}
+                </button>
             </div>
         `).join('');
     }
