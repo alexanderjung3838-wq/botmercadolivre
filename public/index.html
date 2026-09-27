@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MercadoBot - Seu Robô de Vendas</title>
-    <!-- Importação de Fonte Moderna -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -24,7 +23,6 @@
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Estilo Glassmorphism (Efeito Vidro) */
         .card, .card-dash { 
             background: rgba(255, 255, 255, 0.03); 
             backdrop-filter: blur(12px); 
@@ -40,10 +38,8 @@
 
         h1, h2, h3 { color: #ffffff; margin-top: 0; font-weight: 600; }
         h2 { margin-bottom: 25px; }
-
         label { text-align: left; display: block; font-weight: 400; color: #cbd5e1; font-size: 14px; margin-bottom: 5px; }
         
-        /* Campos de Texto Modernos */
         input, textarea { 
             width: 100%; padding: 14px; margin-bottom: 20px; 
             background: rgba(0, 0, 0, 0.2); 
@@ -56,7 +52,14 @@
         input:focus, textarea:focus { outline: none; border-color: #3b82f6; background: rgba(0, 0, 0, 0.4); box-shadow: 0 0 10px rgba(59, 130, 246, 0.3); }
         input::placeholder, textarea::placeholder { color: #64748b; }
 
-        /* Botões Premium */
+        .input-group { position: relative; margin-bottom: 20px; }
+        .input-group input { margin-bottom: 0; padding-right: 45px; }
+        .toggle-senha { 
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            cursor: pointer; opacity: 0.6; user-select: none; font-size: 18px;
+        }
+        .toggle-senha:hover { opacity: 1; }
+
         button { 
             background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); 
             color: white; border: none; padding: 14px 20px; font-size: 16px; 
@@ -67,33 +70,26 @@
         
         .btn-ml { background: #ffe600; color: #333; box-shadow: 0 4px 15px rgba(255, 230, 0, 0.2); }
         .btn-ml:hover { background: #facc15; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 230, 0, 0.4); }
-        
         .btn-sair { background: transparent; border: 1px solid #ef4444; color: #ef4444; width: auto; float: right; padding: 8px 20px; margin-top: 0; box-shadow: none; }
         .btn-sair:hover { background: #ef4444; color: white; }
-
         .btn-del { background: rgba(239, 68, 68, 0.2); color: #ef4444; width: auto; padding: 8px 12px; margin: 0; box-shadow: none; border: 1px solid rgba(239, 68, 68, 0.3); }
         .btn-del:hover { background: #ef4444; color: white; }
-        
         .btn-edit { background: rgba(34, 197, 94, 0.2); color: #22c55e; width: auto; padding: 8px 12px; margin: 0; margin-right: 5px; box-shadow: none; border: 1px solid rgba(34, 197, 94, 0.3); }
         .btn-edit:hover { background: #22c55e; color: white; }
 
-        /* Links e Textos Auxiliares */
         .link { color: #60a5fa; cursor: pointer; text-decoration: none; margin-top: 20px; display: inline-block; font-size: 14px; transition: 0.3s; }
         .link:hover { color: #93c5fd; text-decoration: underline; }
 
-        /* Listas e Itens */
         .item { border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding: 20px 0; display: flex; justify-content: space-between; align-items: flex-start; text-align: left; }
         .item:last-child { border-bottom: none; }
         .acoes-item { display: flex; align-items: flex-start; }
         
-        /* Painel Admin */
         #painel-admin { display: none; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid rgba(99, 102, 241, 0.3); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .admin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .btn-status { background: #f59e0b; color: white; padding: 6px 15px; width: auto; margin: 0; font-size: 14px; box-shadow: none; }
         .bloqueado { color: #f87171; font-weight: 600; }
         .ativo-status { color: #4ade80; font-weight: 600; }
 
-        /* Destaque Bônus */
         .upsell-box { background: rgba(0, 0, 0, 0.2); border: 1px dashed rgba(236, 72, 153, 0.4); padding: 20px; border-radius: 8px; margin-bottom: 20px; margin-top: 10px; }
         .destaque-rosa { color: #f472b6; font-weight: 600; }
     </style>
@@ -101,25 +97,29 @@
 <body>
 
 <div class="container">
-    <!-- LOGIN -->
     <div id="tela-login" class="card ativo">
         <h2>🤖 MercadoBot SaaS</h2>
         <input type="email" id="login-email" placeholder="E-mail de Acesso">
-        <input type="password" id="login-senha" placeholder="Sua Senha Secreta">
+        <div class="input-group">
+            <input type="password" id="login-senha" placeholder="Sua Senha Secreta">
+            <span class="toggle-senha" onclick="toggleSenha('login-senha', this)">👁️</span>
+        </div>
         <button onclick="fazerLogin()">Acessar Painel</button>
         <span class="link" onclick="mostrarTela('tela-cadastro')">Criar minha conta gratuita</span>
     </div>
 
-    <!-- CADASTRO -->
     <div id="tela-cadastro" class="card">
         <h2>Nova Conta</h2>
         <input type="email" id="cad-email" placeholder="Seu melhor E-mail">
-        <input type="password" id="cad-senha" placeholder="Crie uma Senha">
+        <input type="email" id="cad-email-confirma" placeholder="Confirme seu E-mail">
+        <div class="input-group">
+            <input type="password" id="cad-senha" placeholder="Crie uma Senha">
+            <span class="toggle-senha" onclick="toggleSenha('cad-senha', this)">👁️</span>
+        </div>
         <button onclick="fazerCadastro()">Criar Conta</button>
         <span class="link" onclick="mostrarTela('tela-login')">Já tenho conta, acessar painel</span>
     </div>
 
-    <!-- DASHBOARD -->
     <div id="tela-dashboard">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; margin-top: 20px;">
             <h2 style="margin: 0;">Painel de Controle</h2>
@@ -171,6 +171,17 @@
     const API_URL = ''; 
     let produtosCadastrados = []; 
 
+    function toggleSenha(idTarget, el) {
+        const input = document.getElementById(idTarget);
+        if(input.type === 'password') {
+            input.type = 'text';
+            el.innerText = '🙈';
+        } else {
+            input.type = 'password';
+            el.innerText = '👁️';
+        }
+    }
+
     function getToken() { return localStorage.getItem('token_mercadobot'); }
     function isAdmin() { return localStorage.getItem('is_admin') === 'true'; }
 
@@ -179,12 +190,25 @@
         document.getElementById('tela-cadastro').classList.remove('ativo');
         document.getElementById('tela-dashboard').classList.remove('ativo');
         document.getElementById(idTela).classList.add('ativo');
+        
+        document.getElementById('cad-email').value = '';
+        document.getElementById('cad-email-confirma').value = '';
+        document.getElementById('cad-senha').value = '';
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-senha').value = '';
     }
 
     async function fazerCadastro() {
+        const email = document.getElementById('cad-email').value;
+        const emailConf = document.getElementById('cad-email-confirma').value;
+        const senha = document.getElementById('cad-senha').value;
+
+        if (!email || !emailConf || !senha) return alert("Preencha todos os campos.");
+        if (email !== emailConf) return alert("Os e-mails não conferem. Verifique a digitação.");
+
         const res = await fetch(API_URL + '/api/auth/register', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: document.getElementById('cad-email').value, senha: document.getElementById('cad-senha').value })
+            body: JSON.stringify({ email, senha })
         });
         const data = await res.json();
         if(res.ok) { alert(data.msg); mostrarTela('tela-login'); } else { alert(data.erro); }
